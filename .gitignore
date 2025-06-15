@@ -1,0 +1,10 @@
+# Ignore everything by default
+*.vci
+*.sca
+*.vec
+*.anf
+*.mrt
+out/
+tests/
+*.zip
+simulations/
