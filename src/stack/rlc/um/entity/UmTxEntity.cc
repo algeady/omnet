@@ -25,8 +25,8 @@ using namespace inet;
 
 void UmTxEntity::initialize()
 {
-    SimTime target = SimTime(50, SIMTIME_MS);      // 5 ms
-    SimTime interval = SimTime(300, SIMTIME_MS);  // 100 ms
+    SimTime target = SimTime(500, SIMTIME_MS);      // 5 ms
+    SimTime interval = SimTime(1000, SIMTIME_MS);  // 100 ms
         codel = new CoDel(target, interval);
 
     sno_ = 0;

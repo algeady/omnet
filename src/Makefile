@@ -228,7 +228,7 @@ OBJS = \
     $O/stack/rlc/am/buffer/AmRxQueue.o \
     $O/stack/rlc/am/buffer/AmTxQueue.o \
     $O/stack/rlc/am/packet/LteRlcAmPdu.o \
-    $O/stack/rlc/aqm/codel.o \
+    $O/stack/rlc/aqm/Red.o \
     $O/stack/rlc/packet/LteRlcDataPdu.o \
     $O/stack/rlc/tm/LteRlcTm.o \
     $O/stack/rlc/um/LteRlcUm.o \
