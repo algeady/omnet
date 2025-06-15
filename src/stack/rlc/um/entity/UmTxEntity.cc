@@ -25,7 +25,9 @@ using namespace inet;
 
 void UmTxEntity::initialize()
 {
-
+    SimTime target = SimTime(50, SIMTIME_MS);      // 5 ms
+    SimTime interval = SimTime(300, SIMTIME_MS);  // 100 ms
+        codel = new CoDel(target, interval);
 
     sno_ = 0;
     firstIsFragment_ = false;
@@ -85,7 +87,7 @@ void UmTxEntity::initialize()
     burstStatus_ = INACTIVE;
 
 }
-
+/*
 bool UmTxEntity::enque(cPacket* pkt)
 {
 
@@ -107,7 +109,40 @@ bool UmTxEntity::enque(cPacket* pkt)
     }
 
 return false;
+}*/
+
+bool UmTxEntity::enque(cPacket* pkt)
+{
+    EV << NOW << " UmTxEntity::enque - bufferize new SDU  " << endl;
+
+    // Check if the buffer has room for the new SDU
+    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
+        // --------- CoDel AQM logic ---------
+        codel->pushEnqueueTime(simTime());
+        // We use the current queue length (number of packets) and arrival time.
+        bool drop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+
+        if (drop) {
+            EV_WARN << "CoDel: packet dropped due to AQM policy." << endl;
+            codel->popEnqueueTime(); // Rollback enqueue time tracking.
+          //  delete pkt;
+            return false;
+        }
+        // --------- End CoDel logic ---------
+
+        // Buffer the SDU in the TX buffer
+        sduQueue_.insert(pkt);
+        queueLength_ += pkt->getByteLength();
+        // Signal the change in buffer occupancy
+        emit(SduBuffer, queueLength_);
+
+        return true;
+    } else {
+        // Buffer is full - cannot enqueue packet
+        return false;
+    }
 }
+
 
 
 

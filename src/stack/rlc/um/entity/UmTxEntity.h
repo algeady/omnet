@@ -16,6 +16,7 @@
 #include "stack/rlc/um/LteRlcUm.h"
 #include "stack/rlc/LteRlcDefs.h"
 #include "nodes/mec/utils/MecCommon.h"
+#include "stack/rlc/aqm/codel.h"
 
 class LteRlcUm;
 class PacketFlowManagerBase;
@@ -54,6 +55,7 @@ class UmTxEntity : public omnetpp::cSimpleModule
 
   protected:
     std::deque<inet::Packet *> *fragments = nullptr;
+    CoDel* codel = nullptr;
 
   public:
     UmTxEntity()
