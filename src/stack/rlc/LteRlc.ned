@@ -132,9 +132,9 @@ simple LteRlcUm like ILteRlcUm {
         @class("LteRlcUm");
         
         @display("i=block/wheelbarrow");
-        // here the size of the buffer Algeady
+        
         //# Rlc Queue
-        int queueSize @unit(B) = default(5MiB);              // RLC TX entity SDU queue size (0: unlimited)
+        int queueSize @unit(B) = default(1MiB);              // RLC TX entity SDU queue size (0: unlimited)
         bool mapAllLcidsToSingleBearer = default(false);     // if true, all LCIDs are mapped to a single bearer
         
         //# SDU-level statistics

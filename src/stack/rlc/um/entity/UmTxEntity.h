@@ -16,8 +16,8 @@
 #include "stack/rlc/um/LteRlcUm.h"
 #include "stack/rlc/LteRlcDefs.h"
 #include "nodes/mec/utils/MecCommon.h"
-#include "stack/rlc/aqm/codel.h"
-
+#include "inet/queueing/filter/RedDropper.h"
+#include "stack/rlc/aqm/Red.h"
 class LteRlcUm;
 class PacketFlowManagerBase;
 
@@ -55,7 +55,6 @@ class UmTxEntity : public omnetpp::cSimpleModule
 
   protected:
     std::deque<inet::Packet *> *fragments = nullptr;
-    CoDel* codel = nullptr;
 
   public:
     UmTxEntity()
@@ -68,6 +67,8 @@ class UmTxEntity : public omnetpp::cSimpleModule
     {
         delete flowControlInfo_;
     }
+    Red* red = nullptr;
+
 
     /*
      * Enqueues an upper layer packet into the SDU buffer

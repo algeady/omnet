@@ -25,10 +25,8 @@ using namespace inet;
 
 void UmTxEntity::initialize()
 {
-    SimTime target = SimTime(500, SIMTIME_MS);      // 5 ms
-    SimTime interval = SimTime(1000, SIMTIME_MS);  // 100 ms
-        codel = new CoDel(target, interval);
 
+    red = new Red(0.02, 100, 150, 0.1, 200, 250);
     sno_ = 0;
     firstIsFragment_ = false;
     notifyEmptyBuffer_ = false;
@@ -87,7 +85,7 @@ void UmTxEntity::initialize()
     burstStatus_ = INACTIVE;
 
 }
-/*
+/*old
 bool UmTxEntity::enque(cPacket* pkt)
 {
 
@@ -109,41 +107,44 @@ bool UmTxEntity::enque(cPacket* pkt)
     }
 
 return false;
-}*/
+}
+
+*/
 
 bool UmTxEntity::enque(cPacket* pkt)
 {
-    EV << NOW << " UmTxEntity::enque - bufferize new SDU  " << endl;
+   // EV << NOW << " UmTxEntity::enque - bufferize new SDU  " << endl;
 
-    // Check if the buffer has room for the new SDU
-    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
-        // --------- CoDel AQM logic ---------
-        codel->pushEnqueueTime(simTime());
-        // We use the current queue length (number of packets) and arrival time.
-        bool drop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+    //EV << NOW << "sduQueue_.getLength()  " <<  sduQueue_.getLength() <<endl;
+    //EV << NOW << "pkt->getByteLength();  " << pkt->getByteLength() <<endl;
+    //EV << NOW << "queueSize_  " <<  queueSize_ <<endl;
+    //EV << NOW << "queueLength_  " <<  queueLength_ <<endl;
 
-        if (drop) {
-            EV_WARN << "CoDel: packet dropped due to AQM policy." << endl;
-            codel->popEnqueueTime(); // Rollback enqueue time tracking.
-          //  delete pkt;
-            return false;
-        }
-        // --------- End CoDel logic ---------
 
+
+    // Use the RED logic to decide whether to drop the packet or not
+    if (red->shouldDrop(sduQueue_.getLength())) {
+        EV << "RED dropped the packet based on queue conditions.\n";
+       // delete pkt;  // Drop the packet
+        return false;
+    }
+
+    // If RED did not drop the packet, proceed with the normal enqueue process
+    if(queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_){
         // Buffer the SDU in the TX buffer
         sduQueue_.insert(pkt);
         queueLength_ += pkt->getByteLength();
-        // Signal the change in buffer occupancy
+        // Packet was successfully enqueued
         emit(SduBuffer, queueLength_);
-
         return true;
     } else {
         // Buffer is full - cannot enqueue packet
+        delete pkt;  // Clean up if the packet couldn't be enqueued
         return false;
     }
+
+    return false;  // Default case if something goes wrong
 }
-
-
 
 
 
