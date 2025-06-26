@@ -25,8 +25,8 @@ using namespace inet;
 
 void UmTxEntity::initialize()
 {
-    SimTime target = SimTime(500, SIMTIME_MS);      // 5 ms
-    SimTime interval = SimTime(1000, SIMTIME_MS);  // 100 ms
+    SimTime target = SimTime(5, SIMTIME_MS);      // 5 ms
+    SimTime interval = SimTime(100, SIMTIME_MS);  // 100 ms
         codel = new CoDel(target, interval);
 
     sno_ = 0;
@@ -195,7 +195,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
             pkt = check_and_cast<inet::Packet *>(sduQueue_.pop());
             queueLength_ -= pkt->getByteLength();
             emit(SduBuffer, queueLength_);
-
+            codel->packetDequeued(); // Notify CoDel that a packet has left the queue
 
             rlcPdu->pushSdu(pkt, sduLength);
             pkt = nullptr;
