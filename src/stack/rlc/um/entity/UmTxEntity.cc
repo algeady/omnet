@@ -50,8 +50,29 @@ void UmTxEntity::initialize()
     queueLength_ = 0;
     // Algeady: registerSignal
         SduBuffer = registerSignal("SduBuffer");
+        PduLength = registerSignal("PduLength");
+        CodelDrop = registerSignal("CodelDrop");
+
+        consecutiveBadIntervals_ = 0; // <-- Initialize our counter
+
+
+        cooldownTimer_ = new cMessage("cooldownTimer");
+
+          // Initialize the flag to false, meaning cooldown is not active at the start.
+          isCooldownActive_ = false;
+
+
         SduHoldingQueue = registerSignal("SduHoldingQueue");
 
+        totalPduLengthInInterval_ = 0;
+        lastPduLength = 2000000;
+        beforeLastPduLength = 2000000; // ADD THIS LINE
+         //   pduLengthAggrEvent_ = new cMessage("pduLengthAggrEvent");
+         //   pduLengthSumPerSecond_ = registerSignal("pduLengthSumPerSecond"); // Register the new signal
+        lastProactiveDropTime_ = -1;
+        pduSumTimer_ = new cMessage("pduSumTimer");
+          //  scheduleAt(simTime() + 0.2, pduLengthAggrEvent_); // Schedule the first event
+        scheduleAt(simTime() + 1.0, pduSumTimer_);
 
 
 
@@ -111,6 +132,9 @@ bool UmTxEntity::enque(cPacket* pkt)
 return false;
 }*/
 
+
+/*
+
 bool UmTxEntity::enque(cPacket* pkt)
 {
     EV << NOW << " UmTxEntity::enque - bufferize new SDU  " << endl;
@@ -144,12 +168,190 @@ bool UmTxEntity::enque(cPacket* pkt)
 }
 
 
+*/
+
+/*
+bool UmTxEntity::enque(cPacket* pkt)
+{
+        bool cooldownActive = (lastProactiveDropTime_ > 0 && simTime() < lastProactiveDropTime_ + SimTime(7, SIMTIME_S));
 
 
+    // --- Original CoDel and Buffer Logic ---
+    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
+        codel->pushEnqueueTime(simTime());
+        bool drop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+        if (drop  || (simTime() > SimTime(4, SIMTIME_S) && lastPduLength < 100000 && !cooldownActive)) {
+            EV_WARN << "CoDel: packet dropped due to AQM policy." << endl;
+            if((simTime() > SimTime(4, SIMTIME_S) && lastPduLength < 100000 && !cooldownActive)){
+                lastPduLength = 2000000;
+                            lastProactiveDropTime_ = simTime();}
+
+            codel->popEnqueueTime();
+            return false;
+        }
+
+        sduQueue_.insert(pkt);
+        queueLength_ += pkt->getByteLength();
+        emit(SduBuffer, queueLength_);
+        return true;
+    } else {
+        return false;
+    }
+}*/
+
+
+/*
+
+bool UmTxEntity::enque(cPacket* pkt)
+{
+    // YOUR ORIGINAL, WORKING LOGIC, modified to use the new flag
+    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
+        codel->pushEnqueueTime(simTime());
+        bool drop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+
+        // The proactive condition now checks the boolean flag
+        if (drop  || (simTime() > SimTime(4, SIMTIME_S) && lastPduLength < 15000 && !isCooldownActive_)) {
+            EV_WARN << "Drop condition met. Reason:" << (drop ? " CoDel." : " Proactive.") << endl;
+
+            // This inner check is still correct for identifying the reason
+            if (simTime() > SimTime(4, SIMTIME_S) && lastPduLength < 15000 && !isCooldownActive_){
+                EV_WARN << "  - Proactive drop actions: Starting 5s cooldown." << endl;
+
+                // Set the flag to TRUE to activate the cooldown
+                isCooldownActive_ = true;
+
+                // Schedule the timer to fire in 5 seconds to turn the flag off
+                scheduleAt(simTime() + SimTime(5, SIMTIME_S), cooldownTimer_);
+
+                // Your original, correct fix for the stuck state
+                lastPduLength = 2000000;
+            }
+
+            codel->popEnqueueTime();
+            return false;
+        }
+
+        sduQueue_.insert(pkt);
+        queueLength_ += pkt->getByteLength();
+        emit(SduBuffer, queueLength_);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+*/
+
+
+bool UmTxEntity::enque(cPacket* pkt)
+{
+    // YOUR ORIGINAL, WORKING LOGIC, with the drop condition changed
+    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
+        codel->pushEnqueueTime(simTime());
+        bool drop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+
+        // --- THE NEW ADAPTIVE DROP CONDITION ---
+        // Drop if last throughput is less than 25% of the previous one.
+        bool proactiveDropCondition = (simTime() > SimTime(4, SIMTIME_S) &&  // Grace period
+                                       beforeLastPduLength > 0 &&             // Prevent division by zero
+                                       lastPduLength < (beforeLastPduLength / 7) && // The new logic!
+                                       !isCooldownActive_);                     // Your cooldown
+        if(drop)
+            emit(CodelDrop, 1);
+
+        if (drop || proactiveDropCondition) {
+            EV_WARN << "Drop condition met. Reason:" << (drop ? " CoDel." : " Proactive.") << endl;
+
+            if (proactiveDropCondition){
+                EV_WARN << "  - Proactive drop actions: Sharp throughput drop detected! Starting 5s cooldown." << endl;
+
+                isCooldownActive_ = true;
+                scheduleAt(simTime() + SimTime(5, SIMTIME_S), cooldownTimer_);
+
+                // We no longer need to reset lastPduLength, as the cooldown timer handles everything.
+            }
+
+            codel->popEnqueueTime();
+            return false;
+        }
+
+        sduQueue_.insert(pkt);
+        queueLength_ += pkt->getByteLength();
+        emit(SduBuffer, queueLength_);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+
+
+
+
+
+
+
+/*
+
+bool UmTxEntity::enque(cPacket* pkt)
+{
+    if (queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_) {
+        codel->pushEnqueueTime(simTime());
+        bool codelDrop = codel->shouldDrop(sduQueue_.getLength(), simTime());
+
+        // First, check for a drop from the original CoDel algorithm.
+        // This should always be active.
+        if (codelDrop) {
+            EV_WARN << "Drop reason: CoDel detected high delay." << endl;
+            codel->popEnqueueTime();
+            return false;
+        }
+
+        // --- Start of our Proactive AQM Logic with Cooldown ---
+
+        // Condition 1: Is the cooldown currently active?
+        // It's active if a drop has happened AND less than 5s have passed.
+        bool cooldownActive = (lastProactiveDropTime_ > 0 && simTime() < lastProactiveDropTime_ + SimTime(5, SIMTIME_S));
+
+        // Condition 2: Is the proactive drop condition met?
+        // (Grace period is over AND last throughput was low AND cooldown is NOT active)
+        if (simTime() > SimTime(4, SIMTIME_S) && lastPduLength < 100000 && !cooldownActive)
+        {
+            EV_WARN << "Proactive drop triggered: last PDU sum (" << lastPduLength << ") was below threshold. Starting 5s cooldown." << endl;
+
+            // Immediately record the time of this drop to START the cooldown.
+            lastProactiveDropTime_ = simTime();
+
+            // Immediately reset lastPduLength to prevent getting stuck (your original fix).
+            lastPduLength = 2000000;
+
+         //   codel->packetDropped(); // Inform CoDel's internal state
+            return false;         // Drop the packet
+        }
+
+        // --- End of Proactive AQM Logic ---
+
+        // If no drop condition was met, enqueue the packet normally.
+        sduQueue_.insert(pkt);
+        queueLength_ += pkt->getByteLength();
+        emit(SduBuffer, queueLength_);
+        return true;
+    } else {
+        // Buffer is full
+        return false;
+    }
+}
+
+
+*/
 
 void UmTxEntity::rlcPduMake(int pduLength)
 {
     EV << NOW << " UmTxEntity::rlcPduMake - PDU with size " << pduLength << " requested from MAC"<< endl;
+
+    aggregatePduLength(pduLength);
+   // emit(PduLength, pduLength);
 
     // create the RLC PDU
     auto pkt = new inet::Packet("lteRlcFragment");
@@ -520,33 +722,121 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 
 
 //Algeady remove 1 million paket from the queue
-void UmTxEntity::remove_million()
+void UmTxEntity::aggregatePduLength(int length)
 {
-    const int packetsToRemove = 200000;
-    int removedCount = 0;
+    totalPduLengthInInterval_ += length;
+}
+/*
 
-    // Loop until we've removed 1 million packets or the queue becomes empty
-    while (!sduQueue_.isEmpty() && removedCount < packetsToRemove)
+// Add this new method to UmTxEntity.cc
+void UmTxEntity::handleMessage(cMessage *msg)
+{
+    if (msg == pduLengthAggrEvent_)
     {
-        // Get the last packet in the queue
-        cPacket* pkt = sduQueue_.back();
+        // The one-second timer has fired.
+        EV << NOW << " UmTxEntity::handleMessage - Aggregating PDU lengths for the last second. Total bytes: " << totalPduLengthInInterval_ << endl;
 
-        // Remove the packet from the queue
-        cPacket* retPkt = sduQueue_.remove(pkt);
+        // Emit the total sum as a statistic. You can view this in the results.
+        emit(PduLength, totalPduLengthInInterval_);
 
-        // Update the total queue length
-        queueLength_ -= retPkt->getByteLength();
-        emit(SduBuffer, queueLength_);
+        // Reset the accumulator for the next interval.
+        totalPduLengthInInterval_ = 0;
 
-        // Ensure the queue length does not go negative
-        ASSERT(queueLength_ >= 0);
-
-        // Free the memory of the removed packet
-        delete retPkt;
-
-        // Increment the removal counter
-        removedCount++;
+        // Reschedule the timer for the next second.
+        scheduleAt(simTime() + 0.2, pduLengthAggrEvent_);
     }
+    else
+    {
+        // Handle other messages if any, or pass to the base class handler if one exists.
+        // In this case, since UmTxEntity doesn't have a base handleMessage, we can just delete unknown messages.
+        delete msg;
+    }
+}*/
 
-    EV << NOW << " UmTxEntity::remove_million - removed " << removedCount << " SDUs from the queue" << endl;
+
+
+/*
+// ADD THIS ENTIRE NEW FUNCTION
+void UmTxEntity::handleMessage(cMessage *msg)
+{
+    if (msg == pduSumTimer_)
+    {
+        // 1. Emit the total sum we gathered over the last 0.2 seconds
+        emit(PduLength, totalPduLengthInInterval_);
+        lastPduLength = totalPduLengthInInterval_;
+        // 2. Reset the accumulator for the next interval
+        totalPduLengthInInterval_ = 0;
+
+        // 3. Reschedule the timer for the next 0.2-second interval
+        scheduleAt(simTime() + 1.0, pduSumTimer_);
+    }
+    else
+    {
+        // This is a safeguard for any other messages
+        delete msg;
+    }
+}
+*/
+
+
+
+/*
+void UmTxEntity::handleMessage(cMessage *msg)
+{
+    if (msg == pduSumTimer_)
+    {
+        // This is your existing logic for updating lastPduLength.
+        // It remains unchanged.
+        lastPduLength = totalPduLengthInInterval_;
+        emit(PduLength, totalPduLengthInInterval_);
+
+        totalPduLengthInInterval_ = 0;
+        scheduleAt(simTime() + 1.0, pduSumTimer_);
+    }
+    // ADD THIS NEW CASE for handling the cooldown timer
+    else if (msg == cooldownTimer_)
+    {
+        // The 5-second cooldown period has ended.
+        EV << NOW << " Cooldown timer expired. Re-enabling proactive AQM." << endl;
+
+        // Set the flag back to FALSE.
+        isCooldownActive_ = false;
+    }
+    else
+    {
+        // This is a safeguard
+        delete msg;
+    }
+}
+*/
+
+
+void UmTxEntity::handleMessage(cMessage *msg)
+{
+    if (msg == pduSumTimer_)
+    {
+        // --- THIS IS THE NEW HISTORY UPDATE LOGIC ---
+        // The value that was "last" now becomes "before last".
+        beforeLastPduLength = lastPduLength;
+
+        // The brand new total we just measured becomes the new "last".
+        lastPduLength = totalPduLengthInInterval_;
+        emit(PduLength, totalPduLengthInInterval_);
+
+
+        EV << NOW << " PDU History Updated: beforeLast=" << beforeLastPduLength << ", last=" << lastPduLength << endl;
+
+        totalPduLengthInInterval_ = 0;
+        scheduleAt(simTime() + 1.0, pduSumTimer_);
+    }
+    else if (msg == cooldownTimer_)
+    {
+        // This cooldown logic remains unchanged.
+        EV << NOW << " Cooldown timer expired. Re-enabling proactive AQM." << endl;
+        isCooldownActive_ = false;
+    }
+    else
+    {
+        delete msg;
+    }
 }

@@ -347,9 +347,15 @@ simple UmTxEntity {
           @signal[SduBuffer];
         @statistic[SduBuffer](source="SduBuffer"; record=vector; interpolationmode=none);
         
+         @signal[PduLength];
+        @statistic[PduLength](source="PduLength"; record=vector; interpolationmode=none);
+        
         
          @signal[SduHoldingQueue];
         @statistic[SduHoldingQueue](source="SduHoldingQueue"; record=vector; interpolationmode=none);
+        
+          @signal[CodelDrop];
+        @statistic[CodelDrop](source="CodelDrop"; record=vector; interpolationmode=none);
         
         
 }

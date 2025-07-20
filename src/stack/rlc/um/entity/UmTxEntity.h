@@ -57,6 +57,31 @@ class UmTxEntity : public omnetpp::cSimpleModule
     std::deque<inet::Packet *> *fragments = nullptr;
     CoDel* codel = nullptr;
 
+
+
+    //pdu capture
+        long totalPduLengthInInterval_; // Accumulator for PDU lengths in one second
+        long lastPduLength;
+        long beforeLastPduLength; // ADD THIS NEW VARIABLE
+        simtime_t lastProactiveDropTime_;
+
+        cMessage* cooldownTimer_;
+
+           // The flag that tells us if the cooldown is active
+           bool isCooldownActive_;
+
+        cMessage *pduSumTimer_;             // Our 0.2s timer
+         //   long totalPduLengthInInterval_;     // Accumulator for the sum
+
+
+
+            int consecutiveBadIntervals_; // <-- Our "Three Strikes" counter
+            int criticalStateCooldown_;      // The "Circuit Breaker" cooldown timer
+        // ... existing methods ...
+           void handleMessage(cMessage *msg) override; // We'll need this to handle the timer
+           void aggregatePduLength(int length); // A new method to update the sum
+
+
   public:
     UmTxEntity()
     {
@@ -128,6 +153,8 @@ class UmTxEntity : public omnetpp::cSimpleModule
 
 //algeady : define signal time
     omnetpp::simsignal_t SduBuffer;
+ omnetpp::simsignal_t CodelDrop;
+    omnetpp::simsignal_t PduLength;
 
     omnetpp::simsignal_t SduHoldingQueue;
 
