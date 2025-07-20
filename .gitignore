@@ -9,3 +9,4 @@ tests/
 *.zip
 simulations/
 
+emulation/extclientserver/results/test-0.elog
