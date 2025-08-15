@@ -154,6 +154,24 @@ class LteMacEnb : public LteMacBase
      */
     virtual void flushHarqBuffers();
 
+
+
+
+
+
+
+
+
+
+
+
+    //algeady
+  protected:
+      // ... other protected variables ...
+
+      // --- ADD THIS LINE for your new signal ---
+      omnetpp::simsignal_t downlinkCqiReportAtMac_;
+
   public:
 
     LteMacEnb();

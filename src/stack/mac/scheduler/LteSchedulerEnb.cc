@@ -133,6 +133,8 @@ void LteSchedulerEnb::initialize(Direction dir, LteMacEnb* mac)
     // Initialize statistics
     avgServedBlocksDl_ = mac_->registerSignal("avgServedBlocksDl");
     avgServedBlocksUl_ = mac_->registerSignal("avgServedBlocksUl");
+    CqiUl = mac_->registerSignal("CqiUl");
+
 }
 
 void LteSchedulerEnb::initializeSchedulerPeriodCounter(NumerologyIndex maxNumerologyIndex)
@@ -213,6 +215,28 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
 
     // Get user transmission parameters
     const UserTxParams& txParams = mac_->getAmc()->computeTxParams(nodeId, dir,carrierFrequency);
+
+    // --- ADD THIS ENTIRE BLOCK TO EXTRACT AND EMIT THE CQI ---
+        // We only care about the UL direction for our gNB-side signal
+        if (dir == DL)
+        {
+            // The UserTxParams contains a vector of CQIs (one per codeword)
+            const CqiVector& cqiVector = txParams.readCqiVector();
+            if (!cqiVector.empty())
+            {
+                // For the average CQI, we take the value for the first codeword
+                Cqi cqi = cqiVector.at(0);
+                if(dir ==DL)
+                    mac_->emit(CqiUl, cqi);
+
+                // Emit our new signal with the extracted value
+               // EV_WARN << NOW << " LteSchedulerEnb: --- EMITTING commandedUlCqi SIGNAL for UE "
+                 //       << nodeId << " with value: " << cqi << " ---" << endl;
+            }
+        }
+
+
+
     const std::set<Band>& allowedBands = txParams.readBands();
 
     //get the number of codewords
@@ -1084,12 +1108,12 @@ void LteSchedulerEnb::resourceBlockStatistics(bool sleep)
 
     plane++;
 
-    if (direction_ == DL)
+   // if (direction_ == DL)
         mac_->emit(avgServedBlocksDl_, allocatedBlocks);
-    else if (direction_ == UL)
+  //  else if (direction_ == UL)
         mac_->emit(avgServedBlocksUl_, allocatedBlocks);
-    else
-        throw cRuntimeError("LteSchedulerEnb::resourceBlockStatistics(): Unrecognized direction %d", direction_);
+  //  else
+     //   throw cRuntimeError("LteSchedulerEnb::resourceBlockStatistics(): Unrecognized direction %d", direction_);
 }
 ActiveSet* LteSchedulerEnb::readActiveConnections()
 {

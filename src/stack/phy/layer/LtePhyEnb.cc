@@ -486,4 +486,3 @@ void LtePhyEnb::initializeFeedbackComputation()
 
     EV << "Feedback Computation \"" << name << "\" loaded." << endl;
 }
-

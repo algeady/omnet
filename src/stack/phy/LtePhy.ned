@@ -89,14 +89,15 @@ simple LtePhyUeD2D extends LtePhyUe {
          //# D2D CQI statistic
          @signal[averageCqiD2D];
          @statistic[averageCqiD2D](title="Average Cqi reported in D2D"; unit="cqi"; source="averageCqiD2D"; record=mean,vector);
-}
+}         
 
 // 
 // eNodeB LtePhy module of PHY Layer
 //
 simple LtePhyEnb extends LtePhyBase {
     @class("LtePhyEnb");
-    
+    @signal[hh];
+         @statistic[hh](title="Average Cqi reported in D2D"; unit=""; source="hh"; record=mean,vector);
     double targetBler = default(0.001);
     double lambdaMinTh = default(0.02);
     double lambdaMaxTh = default(0.2);

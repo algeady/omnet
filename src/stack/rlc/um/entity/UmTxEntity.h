@@ -44,7 +44,7 @@ class PacketFlowManagerBase;
  *
  * The size of PDUs is signalled by the lower layer
  */
-class UmTxEntity : public omnetpp::cSimpleModule
+class UmTxEntity : public omnetpp::cSimpleModule, public omnetpp::cListener
 {
     struct FragmentInfo {
         inet::Packet * pkt= nullptr;
@@ -56,6 +56,11 @@ class UmTxEntity : public omnetpp::cSimpleModule
   protected:
     std::deque<inet::Packet *> *fragments = nullptr;
     CoDel* codel = nullptr;
+
+
+    //algeady
+
+
 
   public:
     UmTxEntity()
@@ -130,14 +135,49 @@ class UmTxEntity : public omnetpp::cSimpleModule
     omnetpp::simsignal_t SduBuffer;
 
     omnetpp::simsignal_t SduHoldingQueue;
-
+    omnetpp::simsignal_t   ss;
 
     // reference to the parent's RLC layer
     LteRlcUm* lteRlc_;
 
 
 
-    /*
+
+
+
+
+    enum AqmAwareState { CODEL_ACTIVE, PATTERN_ACTIVE, WAITING_FOR_RECOVERY };
+        AqmAwareState aqmState_;
+
+        bool dropNextPacket_ = false; // Flag set by receiveSignal
+        int lastCqiInt_ = -1;
+        omnetpp::simtime_t timeEnteredRecoveryState_ = -1; // Timer for the 2s recovery
+
+        // Your existing variables
+        double lastCqiDl_ = -1.0;
+        int ignoreCounter_ = 0; // Counts how many patterns to ignore
+
+
+
+
+
+
+
+
+/*
+    double lastCqiDl_ = -1.0;
+
+        // --- VARIABLES FOR THE OPTIMIZED ALGORITHM ---
+    enum CqiState { IDLE, ACTIVE_MONITORING };        CqiState cqiState_;
+
+        bool dropNextPacket_ = false;
+        int prevCqiInt_ = -1;
+        int lastCqiInt_ = -1;
+        omnetpp::simtime_t timeEnteredStableState_ = -1;
+        bool shouldDropOnNextPattern_ = true; // Start in a state where the first pattern WILL cause a drop
+
+
+
      * @author Alessandro Noferi
      *
      * reference to packetFlowManager in order to be able
@@ -198,6 +238,13 @@ class UmTxEntity : public omnetpp::cSimpleModule
      * watches
      */
     virtual void initialize() override;
+
+  //  virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, double d, omnetpp::cObject *details) override;
+
+    // --- ADD THIS NEW FUNCTION DECLARATION ---
+    // This version listens for signals emitted with an unsigned long long
+    virtual void receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details) override;
+
 
   private:
 

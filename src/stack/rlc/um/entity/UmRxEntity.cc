@@ -331,10 +331,13 @@ void UmRxEntity::toPdcp(Packet* pktAux)
     {
         if (lteInfo->getDirection() != D2D && lteInfo->getDirection() != D2D_MULTI)  // UE in IM
         {
-            ue->emit(rlcThroughput_, tputSample);
+          //  ue->emit(rlcThroughput_, tputSample);
             ue->emit(rlcPacketLoss_, 0.0);
             ue->emit(rlcPacketLossTotal_, 0.0);
-            ue->emit(rlcDelay_, (NOW - ts).dbl());
+                ue->emit(rlcDelay_, (NOW - ts).dbl());
+                ue->emit(rlcThroughput_, sno);
+
+
         }
         else
         {

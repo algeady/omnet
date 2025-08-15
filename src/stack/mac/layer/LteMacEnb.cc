@@ -859,13 +859,13 @@ bool LteMacEnb::bufferizePacket(cPacket* pktAux)
 
 void LteMacEnb::handleUpperMessage(cPacket* pktAux)
 {
-	auto pkt = check_and_cast<Packet *>(pktAux);
+    auto pkt = check_and_cast<Packet *>(pktAux);
     auto lteInfo = pkt->getTag<FlowControlInfo>();
     MacCid cid = idToMacCid(lteInfo->getDestId(), lteInfo->getLcid());
 
     bool isLteRlcPduNewData = checkIfHeaderType<LteRlcPduNewData>(pkt);
 
-	bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if queue is full)
+    bool packetIsBuffered = bufferizePacket(pkt);  // will buffer (or destroy if queue is full)
 
     if(!isLteRlcPduNewData && packetIsBuffered) {
         // new MAC SDU has been received (was requested by MAC, no need to notify scheduler)
@@ -1227,4 +1227,3 @@ int LteMacEnb::getActiveUesNumber(Direction dir)
     return activeUeSet.size();
 
 }
-

@@ -58,6 +58,7 @@ OBJS = \
     $O/apps/voip/VoipPacketSerializer.o \
     $O/apps/voip/VoIPReceiver.o \
     $O/apps/voip/VoIPSender.o \
+    $O/common/CqiHolder.o \
     $O/common/LteCommon.o \
     $O/common/LteControlInfo.o \
     $O/common/binder/Binder.o \

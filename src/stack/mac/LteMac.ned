@@ -38,14 +38,14 @@ simple LteMacBase like LteMac {
         string interfaceName = default("cellular");
 
         //# Mac Queues
-        int queueSize @unit(B) = default(2MiB);              // MAC Buffers queue size
+        int queueSize @unit(B) = default(2MiB);              // MAC Buffers queue size 2
         
         //# Mac MIB
         bool muMimo = default(true);
                        
         //# H-ARQ
-        int harqProcesses = default(8);
-        int maxHarqRtx = default(3);
+        int harqProcesses = default(8);  //default 8
+        int maxHarqRtx = default(3);      //default 3
         int harqFbEvaluationTimer = default(4);              // number of slots for sending back HARQ FB
         
         //# Statistics display (in GUI)
@@ -76,6 +76,12 @@ simple LteMacBase like LteMac {
         @statistic[macPacketLossDl](title="Mac Packet Loss Dl"; unit=""; source="macPacketLossDl"; record=mean);
         @signal[macBufferOverFlowDl];
         @statistic[macBufferOverFlowDl](title="Mac buffer overflow as function of time"; unit="Byte/s"; source="macBufferOverFlowDl"; record=mean);
+        
+        //algeady
+        @signal[downlinkCqiReportAtMac_];
+        @statistic[downlinkCqiReportAtMac_](title="downlinkCqiReportAtMac_"; unit="integer"; source="downlinkCqiReportAtMac_"; record=mean);
+        
+        
         @signal[macBufferOverFlowUl];
         @statistic[macBufferOverFlowUl](title="Mac buffer overflow as function of time"; unit="Byte/s"; source="macBufferOverFlowUl"; record=mean);
         @signal[macBufferOverFlowD2D];
@@ -245,6 +251,9 @@ simple LteMacEnb extends LteMacBase {
         @statistic[avgServedBlocksDl](title="Avg Served Blocks Dl"; unit="blocks"; source="avgServedBlocksDl"; record=mean,vector);
         @signal[avgServedBlocksUl];
         @statistic[avgServedBlocksUl](title="Avg Served Blocks Ul"; unit="blocks"; source="avgServedBlocksUl"; record=mean,vector);
+        
+        @signal[CqiUl];
+         @statistic[CqiUl](title="Average Cqi reported in UL"; unit="cqi"; source="CqiUl"; record=mean,count,vector);
 }    
 
 //
