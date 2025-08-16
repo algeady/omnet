@@ -126,6 +126,7 @@ bool UmTxEntity::enque(cPacket* pkt)
     if (red->shouldDrop(sduQueue_.getLength())) {
         EV << "RED dropped the packet based on queue conditions.\n";
        // delete pkt;  // Drop the packet
+        emit(SduHoldingQueue, 1.0);
         return false;
     }
 
@@ -135,7 +136,7 @@ bool UmTxEntity::enque(cPacket* pkt)
         sduQueue_.insert(pkt);
         queueLength_ += pkt->getByteLength();
         // Packet was successfully enqueued
-        emit(SduBuffer, queueLength_);
+        emit(SduBuffer, queueLength_/1494);
         return true;
     } else {
         // Buffer is full - cannot enqueue packet
@@ -195,7 +196,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
             pkt = check_and_cast<inet::Packet *>(sduQueue_.pop());
             queueLength_ -= pkt->getByteLength();
-            emit(SduBuffer, queueLength_);
+            emit(SduBuffer, queueLength_/1494);
 
 
             rlcPdu->pushSdu(pkt, sduLength);
@@ -386,7 +387,7 @@ void UmTxEntity::removeDataFromQueue()
     // ...and remove it
     cPacket* retPkt = sduQueue_.remove(pkt);
     queueLength_ -= retPkt->getByteLength();
-    emit(SduBuffer, queueLength_);
+    emit(SduBuffer, queueLength_/1494);
 
     ASSERT(queueLength_ >= 0);
     delete retPkt;
@@ -404,7 +405,7 @@ void UmTxEntity::clearQueue()
     }
 
     queueLength_ = 0;
-    emit(SduBuffer, queueLength_);
+    emit(SduBuffer, queueLength_/1494);
 
 
     // reset variables except for sequence number
@@ -421,7 +422,7 @@ void UmTxEntity::enqueHoldingPackets(cPacket* pkt)
     EV << NOW << " UmTxEntity::enqueHoldingPackets - storing new SDU into the holding buffer " << endl;
     sduHoldingQueue_.insert(pkt);
     int holding_length = sduHoldingQueue_.getByteLength();
-    emit(SduHoldingQueue, holding_length);
+   // emit(SduHoldingQueue, holding_length);
 
 }
 
@@ -445,7 +446,7 @@ void UmTxEntity::resumeDownstreamInPackets()
 
         sduHoldingQueue_.pop();
         int holding_length = sduHoldingQueue_.getByteLength();
-        emit(SduHoldingQueue, holding_length);
+       // emit(SduHoldingQueue, holding_length);
 
         // store the SDU in the TX buffer
 
@@ -521,33 +522,4 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
 
 
 //Algeady remove 1 million paket from the queue
-void UmTxEntity::remove_million()
-{
-    const int packetsToRemove = 200000;
-    int removedCount = 0;
 
-    // Loop until we've removed 1 million packets or the queue becomes empty
-    while (!sduQueue_.isEmpty() && removedCount < packetsToRemove)
-    {
-        // Get the last packet in the queue
-        cPacket* pkt = sduQueue_.back();
-
-        // Remove the packet from the queue
-        cPacket* retPkt = sduQueue_.remove(pkt);
-
-        // Update the total queue length
-        queueLength_ -= retPkt->getByteLength();
-        emit(SduBuffer, queueLength_);
-
-        // Ensure the queue length does not go negative
-        ASSERT(queueLength_ >= 0);
-
-        // Free the memory of the removed packet
-        delete retPkt;
-
-        // Increment the removal counter
-        removedCount++;
-    }
-
-    EV << NOW << " UmTxEntity::remove_million - removed " << removedCount << " SDUs from the queue" << endl;
-}
