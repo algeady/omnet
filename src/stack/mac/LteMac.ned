@@ -252,7 +252,7 @@ simple LteMacEnb extends LteMacBase {
         @signal[avgServedBlocksUl];
         @statistic[avgServedBlocksUl](title="Avg Served Blocks Ul"; unit="blocks"; source="avgServedBlocksUl"; record=mean,vector);
         
-        @signal[CqiUl];
+        @signal[CqiDl];
          @statistic[CqiUl](title="Average Cqi reported in UL"; unit="cqi"; source="CqiUl"; record=mean,count,vector);
 }    
 

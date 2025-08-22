@@ -133,7 +133,7 @@ void LteSchedulerEnb::initialize(Direction dir, LteMacEnb* mac)
     // Initialize statistics
     avgServedBlocksDl_ = mac_->registerSignal("avgServedBlocksDl");
     avgServedBlocksUl_ = mac_->registerSignal("avgServedBlocksUl");
-    CqiUl = mac_->registerSignal("CqiUl");
+    CqiDl = mac_->registerSignal("CqiUl");
 
 }
 
@@ -227,7 +227,7 @@ unsigned int LteSchedulerEnb::scheduleGrant(MacCid cid, unsigned int bytes, bool
                 // For the average CQI, we take the value for the first codeword
                 Cqi cqi = cqiVector.at(0);
                 if(dir ==DL)
-                    mac_->emit(CqiUl, cqi);
+                    mac_->emit(CqiDl, cqi);
 
                 // Emit our new signal with the extracted value
                // EV_WARN << NOW << " LteSchedulerEnb: --- EMITTING commandedUlCqi SIGNAL for UE "

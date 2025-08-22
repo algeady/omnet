@@ -25,8 +25,8 @@ using namespace inet;
 
 void UmTxEntity::initialize()
 {
-    SimTime target = SimTime(5, SIMTIME_MS);      // 5 ms
-    SimTime interval = SimTime(200, SIMTIME_MS);  // 100 ms
+    SimTime target = SimTime(20, SIMTIME_MS);      // 5 ms
+    SimTime interval = SimTime(100, SIMTIME_MS);  // 100 ms
         codel = new CoDel(target, interval);
         // --- ADD THESE LINES AT THE TOP ---
 
@@ -63,10 +63,10 @@ void UmTxEntity::initialize()
           if (macModule)
           {
               // Call subscribe() on the MAC module pointer with the correct signal name.
-              macModule->subscribe("CqiUl", this);
+              macModule->subscribe("CqiDl", this);
 
               // Update the log message to be accurate.
-              EV << "UmTxEntity::initialize - Subscribed to 'CqiUl' signal from MAC." << endl;
+             // EV << "UmTxEntity::initialize - Subscribed to 'CqiUl' signal from MAC." << endl;
           }
           else
           {
@@ -134,12 +134,11 @@ void UmTxEntity::initialize()
     burstStatus_ = INACTIVE;
 
 }
-
+/*
 bool UmTxEntity::enque(cPacket* pkt)
 {
 
-  if ((NOW > 20)&& (NOW<22))
-      return false;
+
 
     EV << NOW << " UmTxEntity::enque - bufferize new SDU  " << endl;
     if(queueSize_ == 0 || queueLength_ + pkt->getByteLength() < queueSize_){
@@ -161,7 +160,8 @@ bool UmTxEntity::enque(cPacket* pkt)
 
 return false;
 }
-/*
+*/
+
 
 // --- REPLACE your enque() function with this SIMPLE version ---
 /*
@@ -190,7 +190,7 @@ bool UmTxEntity::enque(cPacket* pkt)
     }
 }
 
-
+*/
 
 // --- REPLACE your enque() function with this FINAL version ---
 
@@ -260,7 +260,7 @@ bool UmTxEntity::enque(cPacket* pkt)
 }
 
 
-*/
+
 
 void UmTxEntity::rlcPduMake(int pduLength)
 {
@@ -633,299 +633,14 @@ void UmTxEntity::rlcHandleD2DModeSwitch(bool oldConnection, bool clearBuffer)
     }
 }
 
-/*
-
-void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
-{
-    // Check if the signal is the one we are interested in
-    if (strcmp(getSignalName(signalID), "CqiUl") == 0)
-    {
-        // 'd' is now an unsigned long long, which is the number of allocated blocks.
-        //unsigned long long allocatedBlocks = d;
-        lastCqiDl_ = d;
 
 
-      //  EV << NOW << " UmTxEntity: Received avgServedBlocksDl signal with value: " << allocatedBlocks << endl;
-
-
-        // --- YOU CAN NOW USE THIS 'allocatedBlocks' VALUE IN YOUR ALGORITHM ---
-        // For example, you could store it in a member variable.
-        // lastAllocatedBlocks_ = allocatedBlocks;
-    }
-}*/
-
-
-// --- REPLACE your receiveSignal(uint64_t,...) with this version ---
-/*
-void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
-{
-    // Only process the "CqiUl" signal in this function
-    if (strcmp(getSignalName(signalID), "CqiUl") != 0) {
-        return;
-    }
-
-    // This line from your working code is still correct, as 'd' holds the CQI
-    lastCqiDl_ = d;
-    emit(ss, lastCqiDl_);
-
-    // --- STATE MACHINE LOGIC ---
-    int currentCqiInt = static_cast<int>(lastCqiDl_);
-
-    // Only run the logic if we have valid previous CQI data
-    if (prevCqiInt_ >= 0)
-    {
-        switch (cqiState_)
-        {
-            case NORMAL:
-            {
-                // In NORMAL, we are waiting for the 15 -> 14 drop
-                if (prevCqiInt_ == 15 && currentCqiInt == 14)
-                {
-                    EV << NOW << " UmTxEntity::receiveSignal [STATE CHANGE] 15 -> 14 detected. State is now MOVING." << endl;
-                    cqiState_ = MOVING;
-                }
-                break;
-            }
-            case MOVING:
-            {
-                // In MOVING, we are waiting for the 14 -> 15 recovery
-                if (prevCqiInt_ == 14 && currentCqiInt == 15)
-                {
-                    EV_WARN << NOW << " UmTxEntity::receiveSignal [PATTERN COMPLETE] 14 -> 15. Arming flag to drop next packet." << endl;
-                    dropNextPacket_ = true; // Set the flag for enque()
-                    cqiState_ = NORMAL;     // Immediately reset the state machine
-                }
-                // If the pattern is broken, reset
-                else if (currentCqiInt != 14)
-                {
-                    EV << NOW << " UmTxEntity::receiveSignal [PATTERN BROKEN]. State is now NORMAL." << endl;
-                    cqiState_ = NORMAL;
-                }
-                break;
-            }
-        }
-    }
-
-    // Update the history for the *next* signal
-    prevCqiInt_ = currentCqiInt;
-}
-*/
-
-// --- REPLACE your receiveSignal(uint64_t,...) with this CLEAN version ---
-
-// --- REPLACE your receiveSignal(uint64_t,...) with this ROBUST version ---
-/*
-void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
-{
-    if (strcmp(getSignalName(signalID), "CqiUl") != 0) return;
-
-    int currentCqiInt = (Cqi)d;
-    simtime_t now = simTime();
-
-    // Initialize history
-    if (lastCqiInt_ < 0) {
-        lastCqiInt_ = currentCqiInt;
-        return;
-    }
-
-    // --- The Clean 2-State Machine ---
-    switch (cqiState_)
-    {
-        case IDLE:
-        {
-            // In IDLE state, we are waiting for the 5-second qualification period.
-            if (currentCqiInt >= 15) {
-                if (timeEnteredStableState_ < 0) {
-                    timeEnteredStableState_ = now;
-                } else if (now - timeEnteredStableState_ >= 5.0) {
-                    EV << NOW << " UmTxEntity: QUALIFIED. Switching to ACTIVE_MONITORING." << endl;
-                    cqiState_ = ACTIVE_MONITORING;
-                }
-            } else {
-                timeEnteredStableState_ = -1;
-            }
-            break;
-        }
-        case ACTIVE_MONITORING:
-        {
-            // We are now qualified and actively looking for patterns.
-
-            // --- THE NEW ROBUST PATTERN DETECTION LOGIC ---
-            // Trigger Condition: The previous state was 14, and the new state is 15.
-            // This works for both "15 -> 14 -> 15" and "15 -> 14 -> 14 -> 15".
-            if (lastCqiInt_ == 14 && currentCqiInt == 15)
-            {
-                EV_WARN << NOW << " UmTxEntity: Flutter pattern detected (14 -> 15 recovery). Arming drop." << endl;
-                dropNextPacket_ = true;
-            }
-
-            // The Reset Condition
-            if (currentCqiInt < 14) {
-                EV << NOW << " UmTxEntity: RESETTING - UE moved far away. Returning to IDLE." << endl;
-                cqiState_ = IDLE;
-                timeEnteredStableState_ = -1;
-            }
-            break;
-        }
-    }
-
-    // Update history for the next cycle
-    lastCqiInt_ = currentCqiInt;
-}
-*/
-
-
-
-// --- REPLACE your receiveSignal(uint64_t,...) with this TOGGLE version ---
-/*
-void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
-{
-    if (strcmp(getSignalName(signalID), "CqiUl") != 0) return;
-
-    int currentCqiInt = (Cqi)d;
-    emit(ss,currentCqiInt);
-    simtime_t now = simTime();
-
-    if (lastCqiInt_ < 0) { lastCqiInt_ = currentCqiInt; return; }
-
-    // --- The Clean 2-State Machine with Toggle Logic ---
-    switch (cqiState_)
-    {
-        case IDLE:
-        {
-            // In IDLE state, we are waiting for the 5-second qualification period.
-            if (currentCqiInt >= 15) {
-                if (timeEnteredStableState_ < 0) {
-                    timeEnteredStableState_ = now;
-                } else if (now - timeEnteredStableState_ >= 5.0) {
-                    EV << NOW << " UmTxEntity: QUALIFIED. Switching to ACTIVE_MONITORING." << endl;
-                    cqiState_ = ACTIVE_MONITORING;
-                    shouldDropOnNextPattern_ = true; // Always start fresh by dropping on the first pattern
-                }
-            } else {
-                timeEnteredStableState_ = -1;
-            }
-            break;
-        }
-        case ACTIVE_MONITORING:
-        {
-            // We are now qualified and actively looking for the 14 -> 15 recovery pattern.
-            if (lastCqiInt_ == 14 && currentCqiInt == 15)
-            {
-                // --- THE NEW TOGGLE LOGIC ---
-                if (shouldDropOnNextPattern_)
-                {
-                    EV_WARN << NOW << " UmTxEntity: Flutter pattern detected. Arming DROP." << endl;
-                    dropNextPacket_ = true;
-                }
-                else
-                {
-                    EV << NOW << " UmTxEntity: Flutter pattern detected. IGNORING this one." << endl;
-                    // Do nothing, no drop is armed.
-                }
-
-                // Invert the toggle for the next time.
-                shouldDropOnNextPattern_ = !shouldDropOnNextPattern_;
-            }
-
-            // The Reset Condition
-            if (currentCqiInt < 14) {
-                EV << NOW << " UmTxEntity: RESETTING - UE moved far away. Returning to IDLE." << endl;
-                cqiState_ = IDLE;
-                timeEnteredStableState_ = -1;
-            }
-            break;
-        }
-    }
-
-    // Update history for the next cycle
-    lastCqiInt_ = currentCqiInt;
-}*/
-
-
-
-// --- REPLACE your receiveSignal(uint64_t,...) with this FINAL version ---
-
-
-/*
-void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
-{
-    if (strcmp(getSignalName(signalID), "CqiUl") != 0) return;
-
-    lastCqiDl_ = d;
-    int currentCqiInt = static_cast<int>(lastCqiDl_);
-    simtime_t now = simTime();
-
-    if (lastCqiInt_ < 0) { lastCqiInt_ = currentCqiInt; return; }
-
-    // --- The Final State Machine ---
-    switch (aqmState_)
-    {
-        case CODEL_ACTIVE:
-        {
-            // In this state, CoDel is ON. We are waiting for the FIRST 14->15 transition
-            // to switch to aggressive pattern-dropping mode.
-            if (lastCqiInt_ == 14 && currentCqiInt == 15) {
-                EV_WARN << NOW << " UmTxEntity: [CODEL_ACTIVE -> PATTERN_ACTIVE] Trigger pattern detected. CoDel now OFF." << endl;
-                aqmState_ = PATTERN_ACTIVE;
-            }
-            break;
-        }
-        case PATTERN_ACTIVE:
-        {
-            // In this state, CoDel is OFF. We drop on every 14->15 pattern.
-            if (lastCqiInt_ == 14 && currentCqiInt == 15) {
-                EV_WARN << NOW << " UmTxEntity: [PATTERN_ACTIVE] Flutter pattern detected. Arming DROP." << endl;
-                dropNextPacket_ = true;
-            }
-
-            // --- Exit Conditions ---
-            // 1. UE moved far away
-            if (currentCqiInt < 14) {
-                EV << NOW << " UmTxEntity: [PATTERN_ACTIVE -> WAITING_FOR_RECOVERY] UE moved far away." << endl;
-                aqmState_ = WAITING_FOR_RECOVERY;
-                timeEnteredRecoveryState_ = -1;
-            }
-            // 2. UE became stable again
-            else if (currentCqiInt >= 15) {
-                if (timeEnteredRecoveryState_ < 0) {
-                    timeEnteredRecoveryState_ = now; // Start 2s timer
-                } else if (now - timeEnteredRecoveryState_ >= 2.0) {
-                    EV << NOW << " UmTxEntity: [PATTERN_ACTIVE -> CODEL_ACTIVE] UE has recovered." << endl;
-                    aqmState_ = CODEL_ACTIVE; // Turn CoDel back on
-                }
-            } else { // If CQI is 14, it's not stable, so reset the recovery timer
-                timeEnteredRecoveryState_ = -1;
-            }
-            break;
-        }
-        case WAITING_FOR_RECOVERY:
-        {
-            // In this state, both CoDel and pattern dropping are OFF.
-            // We are waiting for 2 seconds of stability to turn CoDel back on.
-            if (currentCqiInt >= 15) {
-                if (timeEnteredRecoveryState_ < 0) {
-                    timeEnteredRecoveryState_ = now; // Start 2s timer
-                } else if (now - timeEnteredRecoveryState_ >= 2.0) {
-                    EV << NOW << " UmTxEntity: [WAITING_FOR_RECOVERY -> CODEL_ACTIVE] Recovery complete. CoDel ON." << endl;
-                    aqmState_ = CODEL_ACTIVE;
-                }
-            } else {
-                timeEnteredRecoveryState_ = -1; // Reset timer if CQI is not high
-            }
-            break;
-        }
-    }
-    lastCqiInt_ = currentCqiInt;
-}
-
-*/
 
 // --- REPLACE your receiveSignal(uint64_t,...) with this final tuned version ---
 
 void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t signalID, uint64_t d, omnetpp::cObject *details)
 {
-    if (strcmp(getSignalName(signalID), "CqiUl") != 0) return;
+    if (strcmp(getSignalName(signalID), "CqiDl") != 0) return;
 
     lastCqiDl_ = d;
     emit(ss, lastCqiDl_);
