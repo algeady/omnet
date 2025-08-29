@@ -128,7 +128,7 @@ class UmTxEntity : public omnetpp::cSimpleModule
     omnetpp::simsignal_t SduBuffer;
 
     omnetpp::simsignal_t SduHoldingQueue;
-
+    omnetpp::simsignal_t aqm_drop;
 
     // reference to the parent's RLC layer
     LteRlcUm* lteRlc_;

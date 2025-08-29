@@ -1,0 +1,23 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007f9f73cb96f0, pid=3409, tid=3410
+#
+# JRE version: OpenJDK Runtime Environment Temurin-17.0.4+8 (17.0.4+8) (build 17.0.4+8)
+# Java VM: OpenJDK 64-Bit Server VM Temurin-17.0.4+8 (17.0.4+8, mixed mode, tiered, compressed oops, compressed class ptrs, g1 gc, linux-amd64)
+# Problematic frame:
+# C  [libc.so.6+0x9a6f0]  cfree+0x20
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -F%F -- %E" (or dumping to /home/almozaffar/Downloads/omnetpp/samples/simu5g/emulation/extclientserver/core.3409)
+#
+# If you would like to submit a bug report, please visit:
+#   https://github.com/adoptium/adoptium-support/issues
+# The crash happened outside the Java Virtual Machine in native code.
+# See problematic frame for where to report the bug.
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: --add-modules=ALL-SYSTEM -Xmx1024m -Dosgi.instance.area.default=/home/almozaffar/Downloads/omnetpp/bin/../ide/../samples /home/almozaffar/Downloads/omnetpp/ide//plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar -os linux -ws gtk -arch x86_64 -showsplash -launcher /home/almozaffar/Downloads/omnetpp/ide/opp_ide -name OMNeT++ IDE --launcher.library /home/almozaffar/Downloads/omnetpp/ide//plugins/org.eclipse.equinox.launcher.gtk.linux.x86_64_1.2.400.v20211117-0650/eclipse_11600.so -startup /home/almozaffar/Downloads/omnetpp/ide//plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar --launcher.appendVmargs -exitdata 14 -vm /home/almozaffar/Downloads/omnetpp/ide//plugins/org.eclipse.justj.openjdk.hotspot.jre.full.stripped.linux.x86_64_17.0.4.v20220805-1047/jre/bin/java -vmargs --add-modules=ALL-SYSTEM -Xmx1024m -Dosgi.instance.area.default=/home/almozaffar/Downloads/omnetpp/bin/../ide/../samples -jar /home/almozaffar/Downloads/omnetpp/ide//plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar
+
+Host: 

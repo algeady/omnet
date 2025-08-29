@@ -138,12 +138,12 @@ void LteRlcUm::sendToLowerLayer(cPacket *pktAux)
     send(pktAux, down_[OUT_GATE]);
 
     auto  lteInfo = pkt->getTag<FlowControlInfo>();
-
+/*
     if (lteInfo->getDirection()==DL)
         emit(rlcPacketLossDl, 0.0);
     else
         emit(rlcPacketLossUl, 0.0);
-
+*/
     emit(sentPacketToLowerLayer, pkt);
 }
 

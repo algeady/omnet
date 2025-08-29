@@ -49,7 +49,7 @@ void UmTxEntity::initialize()
     // Algeady: registerSignal
         SduBuffer = registerSignal("SduBuffer");
         SduHoldingQueue = registerSignal("SduHoldingQueue");
-
+        aqm_drop = registerSignal("aqm_drop");
 
 
 
@@ -98,11 +98,13 @@ bool UmTxEntity::enque(cPacket* pkt)
         sduQueue_.insert(pkt);
         queueLength_ += pkt->getByteLength();
         // Packet was successfully enqueued
-        emit(SduBuffer, queueLength_);
+        emit(SduBuffer, queueLength_/1494);
 
         return true;
     } else {
         // Buffer is full - cannot enqueue packet
+        emit(aqm_drop, 1.0);
+
         return false;
     }
 
@@ -159,7 +161,7 @@ void UmTxEntity::rlcPduMake(int pduLength)
 
             pkt = check_and_cast<inet::Packet *>(sduQueue_.pop());
             queueLength_ -= pkt->getByteLength();
-            emit(SduBuffer, queueLength_);
+            emit(SduBuffer, queueLength_/1494);
 
 
             rlcPdu->pushSdu(pkt, sduLength);
