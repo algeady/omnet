@@ -133,7 +133,7 @@ void LteSchedulerEnb::initialize(Direction dir, LteMacEnb* mac)
     // Initialize statistics
     avgServedBlocksDl_ = mac_->registerSignal("avgServedBlocksDl");
     avgServedBlocksUl_ = mac_->registerSignal("avgServedBlocksUl");
-    CqiDl = mac_->registerSignal("CqiUl");
+    CqiDl = mac_->registerSignal("CqiDl");
 
 }
 

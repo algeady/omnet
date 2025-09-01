@@ -164,7 +164,7 @@ return false;
 
 
 // --- REPLACE your enque() function with this SIMPLE version ---
-/*
+
 bool UmTxEntity::enque(cPacket* pkt)
 {
 
@@ -190,10 +190,10 @@ bool UmTxEntity::enque(cPacket* pkt)
     }
 }
 
-*/
+
 
 // --- REPLACE your enque() function with this FINAL version ---
-
+/*
 
 bool UmTxEntity::enque(cPacket* pkt)
 {
@@ -213,7 +213,7 @@ bool UmTxEntity::enque(cPacket* pkt)
                 }
                 sduQueue_.insert(pkt);
                 queueLength_ += pkt->getByteLength();
-                emit(SduBuffer, queueLength_);
+                emit(SduBuffer, queueLength_/1494);
                 return true;
             } else {
                 return false;
@@ -260,7 +260,7 @@ bool UmTxEntity::enque(cPacket* pkt)
 }
 
 
-
+*/
 
 void UmTxEntity::rlcPduMake(int pduLength)
 {
@@ -643,7 +643,7 @@ void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t
     if (strcmp(getSignalName(signalID), "CqiDl") != 0) return;
 
     lastCqiDl_ = d;
-    emit(ss, lastCqiDl_);
+   // emit(ss, lastCqiDl_);
     int currentCqiInt = static_cast<int>(lastCqiDl_);
     simtime_t now = simTime();
 
@@ -657,6 +657,7 @@ void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t
             if (lastCqiInt_ == 14 && currentCqiInt == 15) {
                 EV_WARN << NOW << " UmTxEntity: [CODEL_ACTIVE -> PATTERN_ACTIVE] Trigger pattern detected. CoDel now OFF." << endl;
                 aqmState_ = PATTERN_ACTIVE;
+                emit(ss, 1000);
                 ignoreCounter_ = 0; // Start fresh, drop the first pattern
             }
             break;
@@ -683,6 +684,7 @@ void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t
             if (currentCqiInt < 14) {
                 EV << NOW << " UmTxEntity: [PATTERN_ACTIVE -> WAITING_FOR_RECOVERY] UE moved far away." << endl;
                 aqmState_ = WAITING_FOR_RECOVERY;
+                emit(ss, 100);
                 timeEnteredRecoveryState_ = -1;
             }
             else if (currentCqiInt >= 15) {
@@ -705,6 +707,7 @@ void UmTxEntity::receiveSignal(omnetpp::cComponent *source, omnetpp::simsignal_t
                 } else if (now - timeEnteredRecoveryState_ >= 6.0) { // <-- YOUR NEW 4-SECOND TIMER
                     EV << NOW << " UmTxEntity: [WAITING_FOR_RECOVERY -> CODEL_ACTIVE] Recovery complete. CoDel ON." << endl;
                     aqmState_ = CODEL_ACTIVE;
+                    emit(ss, 500);
                 }
             } else {
                 timeEnteredRecoveryState_ = -1;
